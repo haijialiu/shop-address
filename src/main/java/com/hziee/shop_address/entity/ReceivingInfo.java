@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ReceivingInfo {
     @TableId(type = IdType.AUTO)
-    private int id;
+    private Integer id;
     private String ConsigneeName;
     private String consigneeTel;
     private Integer cityId;
