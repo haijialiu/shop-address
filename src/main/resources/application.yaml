@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/shop_address?serverTimezone=UTC&useUnicode=true&characterEncoding=utf-8
+  thymeleaf:
+    cache: false
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+
+
+
+mybatis-plus:
+  type-aliases-package: com.hziee.shop_address
+  mapper-locations: classpath:mybatis/mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
