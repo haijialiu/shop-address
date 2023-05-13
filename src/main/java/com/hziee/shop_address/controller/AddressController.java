@@ -19,6 +19,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -82,12 +83,6 @@ public class AddressController {
         return new WebResponse(200,saveOrUpdate ? "更新成功" : "添加成功");
     }
 
-    @PostMapping("/receiving_info-update")
-    @ResponseBody
-    public String updateReceivingInfo() {
-
-        return null;
-    }
     @PostMapping("/receiving_info-get")
     @ResponseBody
     public LayuiTableForm getReceivingInfo(Integer page, Integer limit) {
@@ -113,11 +108,44 @@ public class AddressController {
     }
     @PostMapping("/tem_receiving_info-get")
     @ResponseBody
-    public ReceivingInfo getTemReceivingInfo(){
+    public ReceivingInfoVo getTemReceivingInfo(){
         User user = new User();
         user.setId(1);
         QueryWrapper<ReceivingInfo> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("user_id",1);
-        return receivingInfoService.getOne(queryWrapper);
+        ReceivingInfo receivingInfo = receivingInfoService.getOne(queryWrapper);
+        CityAndIdsDto cityNameAndIds = cityService.getCityNameAndIds(receivingInfo.getCityId());
+        return new ReceivingInfoVo( receivingInfo.getId(),
+                receivingInfo.getConsigneeName(),
+                receivingInfo.getConsigneeTel(),
+                cityNameAndIds.getIds(),
+                cityNameAndIds.getCityName(),
+                receivingInfo.getPostcode(),
+                receivingInfo.getAddressDetail(),
+                receivingInfo.isDefaultAddress()
+        );
+    }
+    @PostMapping("/receiving_info-delete")
+    @ResponseBody
+    @Transactional
+    public WebResponse deleteReceivingInfo(Integer id){
+        User user = new User();
+        user.setId(1);
+        System.out.println(id);
+        ReceivingInfo receivingInfo = receivingInfoService.getById(id);
+        receivingInfo.setStatus(2);
+        receivingInfoService.updateById(receivingInfo);
+        if(receivingInfo.isDefaultAddress()){
+            QueryWrapper<ReceivingInfo> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("status",0);
+            List<ReceivingInfo> list = receivingInfoService.list(queryWrapper);
+            if(!list.isEmpty()) {
+                ReceivingInfo info = list.get(0);
+                System.out.println(info);
+                receivingInfo.setDefaultAddress(false);
+                info.setDefaultAddress(true);
+            }
+        }
+        return new WebResponse(200, "删除成功");
     }
 }

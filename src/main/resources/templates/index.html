@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh" xmlns:th="http://thymeleaf.org">
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
 <head>
     <meta charset="UTF-8">
     <link href="/layui/css/layui.css" rel="stylesheet">
@@ -21,7 +21,8 @@
             <li class="layui-nav-item layui-hide layui-show-sm-inline-block">
                 <a href="javascript:;">
                     <img src="https://unpkg.com/outeres@0.0.10/img/layui/icon-v2.png" class="layui-nav-img">
-                    tester
+                    <span th:if="${#authentication!=null}" th:text="${#authentication.name}"></span>
+                    <span th:if="${#authentication==null}" th:text="未登录用户"></span>
                 </a>
                 <dl class="layui-nav-child">
                     <dd><a href="/logout">退出登录</a></dd>
@@ -175,51 +176,71 @@
 
             if (layEvent === 'del') {
                 layer.confirm('确定删除吗？', function (index) {
-                    obj.del(); // 删除对应行（tr）的 DOM 结构，并更新缓存
-                    layer.close(index);
-                    // 向后端发送删除请求，执行完毕后，可通过 reloadData 方法完成数据重载
-                    /*
-                    table.reloadData(id, {
-                      scrollPos: 'fixed'  // 保持滚动条位置不变 - v2.7.3 新增
-                    });
-                    */
-                });
-            } else if (layEvent === 'edit') { //编辑
-                // do something
-                let old_id = null;
+                        $.post(
+                            "/receiving_info-delete",
+                            {id: data.id},
+                            function (res) {
+                                console.log(res.message);
+                                top.layer.msg(res.message, {time: 2000})
+                                table.reload(
+                                    'addresses_table'
+                                );
+                                layer.close(index);
+                            }
+                        );
 
-                function select_show(id, index) {
-                    if (index === 0) {
-                        city_render(city_0, old_id)
-                    } else if (index === 1) {//北京市
-                        city_render(city_1, old_id)
-                    } else if (index === 2) {//朝阳区
-                        city_render(city_2, old_id)
-                    }
-                    old_id = id;
-                }
-
-                $.ajaxSettings.async = false;
-                city_0_render()
-                data.cityIds.reverse();
-                data.cityIds.forEach(select_show);
-                $.ajaxSettings.async = true;
-                form.val(
-                    'address_form-filter',
-                    {
-                        "id": data.id,
-                        "consigneeName": data.consigneeName,
-                        "consigneeTel": data.consigneeTel,
-                        "postcode": data.postcode,
-                        "addressDetail": data.addressDetail,
-                        "defaultAddress": data.defaultAddress,
-                        "status": data.status,
-                        "city_2": data.cityIds[2],
-                        "city_1": data.cityIds[1],
-                        "city_0": data.cityIds[0]
                     }
                 );
-                form.render();
+            } else if (layEvent === 'edit') { //编辑
+                update_form(data);
+                // do something
+                // let old_id = null;
+                //
+                // function select_show(id, index) {
+                //     if (index === 0) {
+                //         city_render(city_0, old_id)
+                //     } else if (index === 1) {//北京市
+                //         city_render(city_1, old_id)
+                //     } else if (index === 2) {//朝阳区
+                //         city_render(city_2, old_id)
+                //     }
+                //     old_id = id;
+                // }
+                //
+                // $.ajaxSettings.async = false;
+                // city_0_render()
+                // data.cityIds.reverse();
+                // data.cityIds.forEach(select_show);
+                // $.ajaxSettings.async = true;
+                // form.val(
+                //     'address_form-filter',
+                //     {
+                //         "id": data.id,
+                //         "consigneeName": data.consigneeName,
+                //         "consigneeTel": data.consigneeTel,
+                //         "postcode": data.postcode,
+                //         "addressDetail": data.addressDetail,
+                //         "defaultAddress": data.defaultAddress,
+                //         "status": data.status,
+                //         "city_2": data.cityIds[2],
+                //         "city_1": data.cityIds[1],
+                //         "city_0": data.cityIds[0]
+                //     }
+                // );
+                // form.render();
+            } else if(layEvent === 'set_default') {
+                console.log("尝试更新默认地址");
+                data.defaultAddress = true;
+                $.post("/receiving_info-submit",
+                    data,
+                    function (res) {
+                        top.layer.msg(res.message, {time: 2000})
+                        table.reload(
+                            'addresses_table'
+                        );
+                    }
+                );
+
             }
         });
 
@@ -286,6 +307,42 @@
             return false; // 阻止默认 form 跳转
         });
 
+        function update_form(data){
+            let old_id = null;
+
+            function select_show(id, index) {
+                if (index === 0) {
+                    city_render(city_0, old_id)
+                } else if (index === 1) {//北京市
+                    city_render(city_1, old_id)
+                } else if (index === 2) {//朝阳区
+                    city_render(city_2, old_id)
+                }
+                old_id = id;
+            }
+
+            $.ajaxSettings.async = false;
+            city_0_render()
+            data.cityIds.reverse();
+            data.cityIds.forEach(select_show);
+            $.ajaxSettings.async = true;
+            form.val(
+                'address_form-filter',
+                {
+                    "id": data.id,
+                    "consigneeName": data.consigneeName,
+                    "consigneeTel": data.consigneeTel,
+                    "postcode": data.postcode,
+                    "addressDetail": data.addressDetail,
+                    "defaultAddress": data.defaultAddress,
+                    "status": data.status,
+                    "city_2": data.cityIds[2],
+                    "city_1": data.cityIds[1],
+                    "city_0": data.cityIds[0]
+                }
+            );
+            form.render();
+        }
 
     });
 </script>
