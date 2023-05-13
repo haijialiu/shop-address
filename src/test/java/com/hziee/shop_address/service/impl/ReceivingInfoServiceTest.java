@@ -24,4 +24,5 @@ class ReceivingInfoServiceTest {
         user.setId(1);
         receivingInfoService.cleanDefaultAddress(user);
     }
+
 }

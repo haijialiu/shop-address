@@ -1,11 +1,15 @@
 package com.hziee.shop_address.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hziee.shop_address.entity.City;
+import com.hziee.shop_address.entity.CityAndIdsDto;
 import com.hziee.shop_address.entity.ReceivingInfo;
 import com.hziee.shop_address.entity.User;
 import com.hziee.shop_address.entity.vo.ReceivingInfoVo;
+import com.hziee.shop_address.entity.vo.WebResponse;
 import com.hziee.shop_address.service.impl.CityService;
 import com.hziee.shop_address.service.impl.ReceivingInfoService;
 import com.hziee.shop_address.utils.LayuiTableForm;
@@ -46,27 +50,36 @@ public class AddressController {
 
     @PostMapping("/receiving_info-submit")
     @ResponseBody
-    public String submitReceivingInfo(ReceivingInfo receivingInfo, @Param("city_0") Integer city_0, @Param("city_1") Integer city_1, @Param("city_2") Integer city_2) {
+    public WebResponse submitReceivingInfo(ReceivingInfo receivingInfo, @Param("city_0") Integer city_0, @Param("city_1") Integer city_1, @Param("city_2") Integer city_2) {
         SecurityContext ctx = SecurityContextHolder.getContext();
         Authentication auth = ctx.getAuthentication();
-        User user = (User) auth.getPrincipal();
+//        User user = (User) auth.getPrincipal();
+        User user = new User();
+        user.setId(1);
         receivingInfo.setUserId(user.getId());
+
+        if(receivingInfo.getId()!=null
+                &&!receivingInfo.isDefaultAddress()
+                &&receivingInfoService.getById(receivingInfo.getId()).isDefaultAddress()){
+            //check if attempt remove the default address.
+            return new WebResponse(400, "至少得保留一个默认地址！");
+        }
 
         // if it is the first address, the address will be default.
         if (receivingInfoService.getUserAddressInfos(user,-1,-1).getRecords().isEmpty()) {
             receivingInfo.setDefaultAddress(true);
         }
-        // if it set default, others (whatever has) will clean the default address
+
+        // if it set default, others (whatever has) will clean the default address.
         if(receivingInfo.isDefaultAddress()){
             receivingInfoService.cleanDefaultAddress(user);
         }
 
-
         Integer city_id = city_2 != null ? city_2 : (city_1 != null ? city_1 : city_0);
         receivingInfo.setCityId(city_id);
         System.out.println(receivingInfo);
-        boolean save = receivingInfoService.save(receivingInfo);
-        return save ? "ok" : "error";
+        boolean saveOrUpdate = receivingInfoService.saveOrUpdate(receivingInfo);
+        return new WebResponse(200,saveOrUpdate ? "更新成功" : "添加成功");
     }
 
     @PostMapping("/receiving_info-update")
@@ -82,16 +95,29 @@ public class AddressController {
         user.setId(1);
         Page<ReceivingInfo> userAddressInfos = receivingInfoService.getUserAddressInfos(user, page, limit);
         List<ReceivingInfoVo> receivingInfoVos = userAddressInfos.getRecords().stream().map(
-                receivingInfo -> new ReceivingInfoVo(
-                        receivingInfo.getId(),
-                        receivingInfo.getConsigneeName(),
-                        receivingInfo.getConsigneeTel(),
-                        receivingInfoService.getCityName(receivingInfo.getCityId()),
-                        receivingInfo.getPostcode(),
-                        receivingInfo.getAddressDetail(),
-                        receivingInfo.isDefaultAddress()
-                        )
+                receivingInfo -> {
+                    CityAndIdsDto cityNameAndIds = cityService.getCityNameAndIds(receivingInfo.getCityId());
+                    return new ReceivingInfoVo(
+                            receivingInfo.getId(),
+                            receivingInfo.getConsigneeName(),
+                            receivingInfo.getConsigneeTel(),
+                            cityNameAndIds.getIds(),
+                            cityNameAndIds.getCityName(),
+                            receivingInfo.getPostcode(),
+                            receivingInfo.getAddressDetail(),
+                            receivingInfo.isDefaultAddress()
+                    );
+                }
         ).toList();
         return new LayuiTableForm("0", "获取失败",userAddressInfos.getTotal(), receivingInfoVos);
+    }
+    @PostMapping("/tem_receiving_info-get")
+    @ResponseBody
+    public ReceivingInfo getTemReceivingInfo(){
+        User user = new User();
+        user.setId(1);
+        QueryWrapper<ReceivingInfo> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_id",1);
+        return receivingInfoService.getOne(queryWrapper);
     }
 }

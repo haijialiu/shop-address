@@ -21,13 +21,7 @@ import java.util.List;
 
 @Service
 public class ReceivingInfoService extends ServiceImpl<ReceivingInfoMapper, ReceivingInfo> implements ReceivingInfoIService {
-    private CityMapper cityMapper;
     private ReceivingInfoMapper receivingInfoMapper;
-    @Autowired
-    public void setCityMapper(CityMapper cityMapper) {
-        this.cityMapper = cityMapper;
-    }
-
     @Autowired
     public void setReceivingInfoMapper(ReceivingInfoMapper receivingInfoMapper) {
         this.receivingInfoMapper = receivingInfoMapper;
@@ -38,7 +32,7 @@ public class ReceivingInfoService extends ServiceImpl<ReceivingInfoMapper, Recei
         QueryWrapper<ReceivingInfo> queryWrapper = new QueryWrapper<>();
         //TODO deal exception
         assert user != null;
-        queryWrapper.eq("user_id", user.getId()).orderByDesc("default_address");
+        queryWrapper.eq("user_id", user.getId()).eq("status",0).orderByDesc("default_address");
         return  receivingInfoMapper.selectPage(iPage, queryWrapper);
     }
     @Override
@@ -54,12 +48,6 @@ public class ReceivingInfoService extends ServiceImpl<ReceivingInfoMapper, Recei
         System.out.println(update);
         if (update != 0 && update != 1)
             throw new RuntimeException("用户数据：默认地址的数量有误");
-    }
-
-    @Override
-    public String getCityName(Integer city_id) {
-//        this.getOne(new QueryWrapper<>().eq("id",city_id));
-        return null;
     }
 
 }

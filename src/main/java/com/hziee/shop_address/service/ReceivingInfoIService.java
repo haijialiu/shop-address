@@ -10,5 +10,5 @@ import java.util.List;
 public interface ReceivingInfoIService extends IService<ReceivingInfo> {
     Page<ReceivingInfo> getUserAddressInfos(User user, Integer page, Integer limit);
     void cleanDefaultAddress(User user);
-    String getCityName(Integer city_id);
+
 }
