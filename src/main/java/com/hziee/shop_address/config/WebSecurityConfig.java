@@ -1,4 +1,4 @@
-package com.hziee.shop_address.utils;
+package com.hziee.shop_address.config;
 
 import com.hziee.shop_address.service.impl.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +10,7 @@ import org.springframework.security.authentication.DefaultAuthenticationEventPub
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -41,6 +42,10 @@ public class WebSecurityConfig {
                 .formLogin(
                         form->form.loginPage("/login"
                         )
+                )
+                //跨域
+                .csrf(
+                        AbstractHttpConfigurer::disable
                 )
         ;
         return http.build();

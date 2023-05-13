@@ -1,7 +1,5 @@
-package com.hziee.shop_address.entity;
+package com.hziee.shop_address.entity.vo;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,16 +7,13 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReceivingInfo {
-    @TableId(type = IdType.AUTO)
+public class ReceivingInfoVo {
     private Integer id;
     private String consigneeName;
     private String consigneeTel;
-    private Integer cityId;
+    private String cityName;
     private String postcode;
     private String addressDetail;
     private boolean defaultAddress;
-    private Integer status;
-    private Integer userId;
 
 }
