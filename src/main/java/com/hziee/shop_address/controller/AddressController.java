@@ -58,29 +58,35 @@ public class AddressController {
         User user = new User();
         user.setId(1);
         receivingInfo.setUserId(user.getId());
+        //临时保存的地址
+        if (receivingInfo.getStatus() == 1) {
 
-        if(receivingInfo.getId()!=null
-                &&!receivingInfo.isDefaultAddress()
-                &&receivingInfoService.getById(receivingInfo.getId()).isDefaultAddress()){
-            //check if attempt remove the default address.
-            return new WebResponse(400, "至少得保留一个默认地址！");
+        } else {
+            if (receivingInfo.getId() != null
+                    && !receivingInfo.isDefaultAddress()
+                    && receivingInfoService.getById(receivingInfo.getId()).isDefaultAddress()) {
+                //check if attempt remove the default address.
+                return new WebResponse(400, "至少得保留一个默认地址！");
+            }
+
+            // if it is the first address, the address will be default.
+            if (receivingInfoService.getUserAddressInfos(user, -1, -1).getRecords().isEmpty()) {
+                receivingInfo.setDefaultAddress(true);
+            }
+
+            // if it set default, others (whatever has) will clean the default address.
+            if (receivingInfo.isDefaultAddress()) {
+                receivingInfoService.cleanDefaultAddress(user);
+            }
+
+            Integer city_id = city_2 != null ? city_2 : (city_1 != null ? city_1 : city_0);
+            receivingInfo.setCityId(city_id);
+            System.out.println(receivingInfo);
+            boolean saveOrUpdate = receivingInfoService.saveOrUpdate(receivingInfo);
+
+            return new WebResponse(200, saveOrUpdate ? "更新成功" : "添加成功");
         }
-
-        // if it is the first address, the address will be default.
-        if (receivingInfoService.getUserAddressInfos(user,-1,-1).getRecords().isEmpty()) {
-            receivingInfo.setDefaultAddress(true);
-        }
-
-        // if it set default, others (whatever has) will clean the default address.
-        if(receivingInfo.isDefaultAddress()){
-            receivingInfoService.cleanDefaultAddress(user);
-        }
-
-        Integer city_id = city_2 != null ? city_2 : (city_1 != null ? city_1 : city_0);
-        receivingInfo.setCityId(city_id);
-        System.out.println(receivingInfo);
-        boolean saveOrUpdate = receivingInfoService.saveOrUpdate(receivingInfo);
-        return new WebResponse(200,saveOrUpdate ? "更新成功" : "添加成功");
+        return new WebResponse();
     }
 
     @PostMapping("/receiving_info-get")
@@ -97,6 +103,7 @@ public class AddressController {
                             receivingInfo.getConsigneeName(),
                             receivingInfo.getConsigneeTel(),
                             cityNameAndIds.getIds(),
+                            receivingInfo.getStatus(),
                             cityNameAndIds.getCityName(),
                             receivingInfo.getPostcode(),
                             receivingInfo.getAddressDetail(),
@@ -112,26 +119,38 @@ public class AddressController {
         User user = new User();
         user.setId(1);
         QueryWrapper<ReceivingInfo> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id",1);
+        queryWrapper.eq("user_id",1).eq("status",1);
         ReceivingInfo receivingInfo = receivingInfoService.getOne(queryWrapper);
-        CityAndIdsDto cityNameAndIds = cityService.getCityNameAndIds(receivingInfo.getCityId());
-        return new ReceivingInfoVo( receivingInfo.getId(),
-                receivingInfo.getConsigneeName(),
-                receivingInfo.getConsigneeTel(),
-                cityNameAndIds.getIds(),
-                cityNameAndIds.getCityName(),
-                receivingInfo.getPostcode(),
-                receivingInfo.getAddressDetail(),
-                receivingInfo.isDefaultAddress()
-        );
+        if(receivingInfo!=null) {
+            CityAndIdsDto cityNameAndIds = cityService.getCityNameAndIds(receivingInfo.getCityId());
+            return new ReceivingInfoVo(receivingInfo.getId(),
+                    receivingInfo.getConsigneeName(),
+                    receivingInfo.getConsigneeTel(),
+                    cityNameAndIds.getIds(),
+                    receivingInfo.getStatus(),
+                    cityNameAndIds.getCityName(),
+                    receivingInfo.getPostcode(),
+                    receivingInfo.getAddressDetail(),
+                    receivingInfo.isDefaultAddress()
+            );
+        }else{
+            return null;
+        }
     }
+//    @PostMapping("/tem_receiving_info-delete")
+//    @ResponseBody
+//    public String temReceivingInfoSubmit(){
+//        User user = new User();
+//        user.setId(1);
+//        return null;
+//    }
+
     @PostMapping("/receiving_info-delete")
     @ResponseBody
     @Transactional
     public WebResponse deleteReceivingInfo(Integer id){
         User user = new User();
         user.setId(1);
-        System.out.println(id);
         ReceivingInfo receivingInfo = receivingInfoService.getById(id);
         receivingInfo.setStatus(2);
         receivingInfoService.updateById(receivingInfo);

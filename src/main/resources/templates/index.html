@@ -46,27 +46,27 @@
                     <div id="receiving_info_id" class="layui-form-item" hidden="hidden">
                         <label class="layui-form-label">地址信息id</label>
                         <div class="layui-input-block">
-                            <input type="text" name="id" autocomplete="off" class="layui-input">
+                            <input id="address_id" type="text" name="id" autocomplete="off" class="layui-input">
                         </div>
                     </div>
                     <div class="layui-form-item">
                         <label class="layui-form-label">收件人姓名</label>
                         <div class="layui-input-block">
                             <input type="text" name="consigneeName" autocomplete="off" placeholder="请输入"
-                                   lay-verify="required" class="layui-input">
+                                   lay-verify="required" class="layui-input address_input_info">
                         </div>
                     </div>
                     <div class="layui-form-item">
                         <label class="layui-form-label">收件人电话</label>
                         <div class="layui-input-block">
                             <input type="text" name="consigneeTel" autocomplete="off" placeholder="请输入"
-                                   lay-verify="required" class="layui-input">
+                                   lay-verify="required" class="layui-input address_input_info">
                         </div>
                     </div>
                     <div id="receiving_info_status" class="layui-form-item" hidden="hidden">
                         <label class="layui-form-label">保存状态</label>
                         <div class="layui-input-block">
-                            <input type="text" name="status" autocomplete="off" value="0" class="layui-input">
+                            <input id="status" type="text" name="status" autocomplete="off" value="0" class="layui-input">
                         </div>
                     </div>
                     <div class="layui-form-item">
@@ -90,31 +90,31 @@
                     </div>
                     <div class="layui-form-item">
                         <div class="layui-inline">
-                            <label class="layui-form-label">邮编</label>
+                            <label class="layui-form-label" for="postcode">邮编</label>
                             <div class="layui-input-block">
                                 <input type="text" name="postcode" id="postcode" autocomplete="000000"
-                                       class="layui-input">
+                                       class="layui-input address_input_info">
                             </div>
                         </div>
                     </div>
                     <div class="layui-form-item layui-form-text">
-                        <label class="layui-form-label">详细地址</label>
+                        <label class="layui-form-label" for="address_detail">详细地址</label>
                         <div class="layui-input-block">
-                            <textarea placeholder="请输入内容" name="addressDetail" class="layui-textarea"
+                            <textarea id="address_detail" placeholder="请输入内容" name="addressDetail" class="layui-textarea address_input_info"
                                       lay-verify="required"></textarea>
                         </div>
                     </div>
 
                     <div class="layui-form-item">
-                        <label class="layui-form-label">默认地址</label>
+                        <label class="layui-form-label" for="is_default_address">默认地址</label>
                         <div class="layui-input-block">
-                            <input type="checkbox" name="defaultAddress" lay-skin="switch" lay-filter="switchDefault"
-                                   title="是|否" value="1">
+                            <input id="is_default_address" type="checkbox" name="defaultAddress" lay-skin="switch" lay-filter="defaultAddress"
+                                   class="address_input_info" title="是|否" value="1">
                         </div>
                     </div>
                     <div class="layui-form-item">
-                        <button class="layui-btn" lay-submit lay-filter="demo2">确认</button>
-                        <button id="reset_button" type="reset" class="layui-btn layui-btn-primary">重置</button>
+                        <button class="layui-btn" lay-submit lay-filter="form_submit">确认</button>
+                        <button id="reset_button"  type="reset" class="layui-btn layui-btn-primary">重置</button>
                     </div>
                 </form>
             </div>
@@ -243,7 +243,6 @@
 
             }
         });
-
         const city_render = function (target_select, relay_id) {
             $.post(
                 "/city-get",
@@ -271,10 +270,20 @@
             city_render(city_0, null);
         }
 
+        //init
         $.ajaxSettings.async = false;
         city_0_render()
         city_render(city_1, city_0.val());
         city_render(city_2, city_1.val());
+        // 未保存的显示
+        $.post(
+            "/tem_receiving_info-get",
+            function (data){
+                if(data) {
+                    update_form(data);
+                }
+            }
+        );
         $.ajaxSettings.async = true;
 
         form.on('select(city_0)', function () {
@@ -284,13 +293,21 @@
             $.ajaxSettings.async = true;
         });
         form.on('select(city_1)', function () {
-            city_render(city_2, city_1.val())
+            city_render(city_2, city_1.val());
         });
+
+        form.on('select',function() {
+            tem_submit();
+        });
+        form.on('switch',function () {
+            tem_submit();
+        })
         form.render(); // 渲染全部表单
-
-
+        $(".address_input_info").on('input',function () {
+            tem_submit();
+        });
         // 提交事件
-        form.on('submit(demo2)', function (data) {
+        form.on('submit(form_submit)', function (data) {
             const field = data.field; // 获取表单字段值
             $.post("/receiving_info-submit",
                 field,
@@ -306,7 +323,18 @@
             );
             return false; // 阻止默认 form 跳转
         });
-
+        $("#reset_button").on('click',function () {
+            if(parseInt($("#status").val())===1){
+                $.post(
+                    "/receiving_info-delete",
+                    {id:$("#address_id").val()},
+                    function (res) {
+                        console.log(res);
+                    }
+                );
+            }
+        })
+        //已有数据更新表单
         function update_form(data){
             let old_id = null;
 
@@ -342,6 +370,15 @@
                 }
             );
             form.render();
+        }
+        //自动保存
+        function tem_submit() {
+            const data = form.val('address_form-filter');
+            data.status = 1;
+            console.log(data);
+            $.post(
+                ""
+            );
         }
 
     });

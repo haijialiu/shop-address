@@ -39,10 +39,13 @@ public class ReceivingInfoService extends ServiceImpl<ReceivingInfoMapper, Recei
     public void cleanDefaultAddress(User user) {
         ReceivingInfo info = new ReceivingInfo();
         info.setDefaultAddress(false);
+        // 只清空正常记录的默认地址标识符
+
         int update = receivingInfoMapper.update(
                 info,
                 new QueryWrapper<ReceivingInfo>()
                         .eq("user_id",user.getId())
+                        .eq("status",0)
                         .eq("default_address",true)
         );
         System.out.println(update);

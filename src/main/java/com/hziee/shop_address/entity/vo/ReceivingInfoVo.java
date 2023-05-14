@@ -14,6 +14,7 @@ public class ReceivingInfoVo {
     private String consigneeName;
     private String consigneeTel;
     private List<Integer> cityIds;
+    private Integer status;
     private String cityName;
     private String postcode;
     private String addressDetail;
