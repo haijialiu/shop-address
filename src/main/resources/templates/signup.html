@@ -33,9 +33,12 @@
                     <i class="layui-icon layui-icon-username"></i>
                 </div>
                 <input type="text" name="username" value="" lay-verify="required" placeholder="用户名"
-                       autocomplete="off" class="layui-input" id="reg-username">
+                                                         autocomplete="off" class="layui-input" id="reg-username">
+            <div th:if="${error==true}" class="layui-form-mid layui-text-em layui-font-red">用户名重复</div>
             </div>
         </div>
+
+
         <div class="layui-form-item">
             <div class="layui-input-wrap">
                 <div class="layui-input-prefix">
@@ -91,25 +94,18 @@
         });
 
         // 提交事件
-        form.on('submit(demo-reg)', function (data) {
-            var field = data.field; // 获取表单字段值
-
-            // 是否勾选同意
-            if (!field.agreement) {
-                layer.msg('您必须勾选同意用户协议才能注册');
-                return false;
-            }
-
-            // 显示填写结果，仅作演示用
-            layer.alert(JSON.stringify(field), {
-                title: '当前填写的字段值'
-            });
-
-            // 此处可执行 Ajax 等操作
-            // …
-
-            return false; // 阻止默认 form 跳转
-        });
+        // form.on('submit(demo-reg)', function (data) {
+        //     var field = data.field; // 获取表单字段值
+        //
+        //     // 此处可执行 Ajax 等操作
+        //     // …
+        //     $.post(
+        //         "/signup",
+        //         field
+        //     );
+        //
+        //     return false; // 阻止默认 form 跳转
+        // });
 
         // 普通事件
         util.on('lay-on', {

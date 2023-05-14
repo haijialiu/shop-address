@@ -1,8 +1,11 @@
 package com.hziee.shop_address.controller;
 
+import com.hziee.shop_address.entity.User;
 import com.hziee.shop_address.service.impl.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 
@@ -27,8 +30,14 @@ public class UserController {
     public String showSignup(){
         return "signup";
     }
-    @PostMapping
-    public String signup(){
+    @PostMapping("/signup")
+    public String signup(User user, Model model){
+        try {
+            userService.save(user);
+        }catch (DuplicateKeyException e){
+            model.addAttribute("error",true);
+            return "signup";
+        }
         return "login";
     }
 }

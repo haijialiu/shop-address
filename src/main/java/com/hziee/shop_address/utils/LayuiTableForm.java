@@ -1,5 +1,6 @@
 package com.hziee.shop_address.utils;
 
+import com.hziee.shop_address.entity.vo.WebResponse;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

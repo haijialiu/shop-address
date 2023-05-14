@@ -1,14 +1,13 @@
 package com.hziee.shop_address.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hziee.shop_address.entity.City;
 import com.hziee.shop_address.entity.CityAndIdsDto;
 import com.hziee.shop_address.entity.ReceivingInfo;
 import com.hziee.shop_address.entity.User;
 import com.hziee.shop_address.entity.vo.ReceivingInfoVo;
+import com.hziee.shop_address.entity.vo.ReceivingInfoVoWebRes;
 import com.hziee.shop_address.entity.vo.WebResponse;
 import com.hziee.shop_address.service.impl.CityService;
 import com.hziee.shop_address.service.impl.ReceivingInfoService;
@@ -21,12 +20,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
-
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Controller
 public class AddressController {
@@ -54,14 +49,10 @@ public class AddressController {
     public WebResponse submitReceivingInfo(ReceivingInfo receivingInfo, @Param("city_0") Integer city_0, @Param("city_1") Integer city_1, @Param("city_2") Integer city_2) {
         SecurityContext ctx = SecurityContextHolder.getContext();
         Authentication auth = ctx.getAuthentication();
-//        User user = (User) auth.getPrincipal();
-        User user = new User();
-        user.setId(1);
+        User user = (User) auth.getPrincipal();
         receivingInfo.setUserId(user.getId());
-        //临时保存的地址
-        if (receivingInfo.getStatus() == 1) {
-
-        } else {
+        //不是临时保存
+        if (receivingInfo.getStatus() != 1) {
             if (receivingInfo.getId() != null
                     && !receivingInfo.isDefaultAddress()
                     && receivingInfoService.getById(receivingInfo.getId()).isDefaultAddress()) {
@@ -78,22 +69,28 @@ public class AddressController {
             if (receivingInfo.isDefaultAddress()) {
                 receivingInfoService.cleanDefaultAddress(user);
             }
-
-            Integer city_id = city_2 != null ? city_2 : (city_1 != null ? city_1 : city_0);
-            receivingInfo.setCityId(city_id);
-            System.out.println(receivingInfo);
-            boolean saveOrUpdate = receivingInfoService.saveOrUpdate(receivingInfo);
-
-            return new WebResponse(200, saveOrUpdate ? "更新成功" : "添加成功");
         }
-        return new WebResponse();
+        Integer city_id = city_2 != null ? city_2 : (city_1 != null ? city_1 : city_0);
+        receivingInfo.setCityId(city_id);
+
+        Integer oldId = receivingInfo.getId();
+        boolean saveOrUpdate = receivingInfoService.saveOrUpdate(receivingInfo);
+        if(oldId==null){
+            //第一次插入，如果是临时保存的就需要返回主键让前台更新
+            ReceivingInfoVo receivingInfoVo = new ReceivingInfoVo();
+            receivingInfoVo.setId(receivingInfo.getId());
+            //只塞了id
+            return new ReceivingInfoVoWebRes(201,"临时保存成功", receivingInfoVo);
+        }
+        return new WebResponse(200, saveOrUpdate ? "更新成功" : "添加成功");
     }
 
     @PostMapping("/receiving_info-get")
     @ResponseBody
     public LayuiTableForm getReceivingInfo(Integer page, Integer limit) {
-        User user = new User();
-        user.setId(1);
+        SecurityContext ctx = SecurityContextHolder.getContext();
+        Authentication auth = ctx.getAuthentication();
+        User user = (User) auth.getPrincipal();
         Page<ReceivingInfo> userAddressInfos = receivingInfoService.getUserAddressInfos(user, page, limit);
         List<ReceivingInfoVo> receivingInfoVos = userAddressInfos.getRecords().stream().map(
                 receivingInfo -> {
@@ -111,17 +108,19 @@ public class AddressController {
                     );
                 }
         ).toList();
-        return new LayuiTableForm("0", "获取失败",userAddressInfos.getTotal(), receivingInfoVos);
+        return new LayuiTableForm("0", "获取失败", userAddressInfos.getTotal(), receivingInfoVos);
     }
+
     @PostMapping("/tem_receiving_info-get")
     @ResponseBody
-    public ReceivingInfoVo getTemReceivingInfo(){
-        User user = new User();
-        user.setId(1);
+    public ReceivingInfoVo getTemReceivingInfo() {
+        SecurityContext ctx = SecurityContextHolder.getContext();
+        Authentication auth = ctx.getAuthentication();
+        User user = (User) auth.getPrincipal();
         QueryWrapper<ReceivingInfo> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id",1).eq("status",1);
+        queryWrapper.eq("user_id", user.getId()).eq("status", 1);
         ReceivingInfo receivingInfo = receivingInfoService.getOne(queryWrapper);
-        if(receivingInfo!=null) {
+        if (receivingInfo != null) {
             CityAndIdsDto cityNameAndIds = cityService.getCityNameAndIds(receivingInfo.getCityId());
             return new ReceivingInfoVo(receivingInfo.getId(),
                     receivingInfo.getConsigneeName(),
@@ -133,7 +132,7 @@ public class AddressController {
                     receivingInfo.getAddressDetail(),
                     receivingInfo.isDefaultAddress()
             );
-        }else{
+        } else {
             return null;
         }
     }
@@ -148,21 +147,25 @@ public class AddressController {
     @PostMapping("/receiving_info-delete")
     @ResponseBody
     @Transactional
-    public WebResponse deleteReceivingInfo(Integer id){
-        User user = new User();
-        user.setId(1);
+    public WebResponse deleteReceivingInfo(Integer id) {
+        SecurityContext ctx = SecurityContextHolder.getContext();
+        Authentication auth = ctx.getAuthentication();
+        User user = (User) auth.getPrincipal();
         ReceivingInfo receivingInfo = receivingInfoService.getById(id);
         receivingInfo.setStatus(2);
-        receivingInfoService.updateById(receivingInfo);
-        if(receivingInfo.isDefaultAddress()){
+        if (receivingInfo.isDefaultAddress()) {
             QueryWrapper<ReceivingInfo> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("status",0);
+            queryWrapper.eq("status", 0);
             List<ReceivingInfo> list = receivingInfoService.list(queryWrapper);
-            if(!list.isEmpty()) {
+            if (!list.isEmpty()) {
                 ReceivingInfo info = list.get(0);
                 System.out.println(info);
-                receivingInfo.setDefaultAddress(false);
                 info.setDefaultAddress(true);
+
+                receivingInfoService.updateById(receivingInfo);
+                receivingInfoService.updateById(info);
+            }else{
+                throw new RuntimeException("没有其他地址了");
             }
         }
         return new WebResponse(200, "删除成功");

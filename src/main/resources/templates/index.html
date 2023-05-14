@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
 <head>
     <meta charset="UTF-8">
     <link href="/layui/css/layui.css" rel="stylesheet">
@@ -21,11 +21,10 @@
             <li class="layui-nav-item layui-hide layui-show-sm-inline-block">
                 <a href="javascript:;">
                     <img src="https://unpkg.com/outeres@0.0.10/img/layui/icon-v2.png" class="layui-nav-img">
-                    <span th:if="${#authentication!=null}" th:text="${#authentication.name}"></span>
-                    <span th:if="${#authentication==null}" th:text="未登录用户"></span>
+                    <span sec:authentication="principal.nickname"></span>
                 </a>
                 <dl class="layui-nav-child">
-                    <dd><a href="/logout">退出登录</a></dd>
+                    <dd><a th:href="@{/logout}">退出登录</a></dd>
                 </dl>
             </li>
 
@@ -309,6 +308,7 @@
         // 提交事件
         form.on('submit(form_submit)', function (data) {
             const field = data.field; // 获取表单字段值
+            field.status=0;
             $.post("/receiving_info-submit",
                 field,
                 function (res) {
@@ -377,7 +377,19 @@
             data.status = 1;
             console.log(data);
             $.post(
-                ""
+                "/receiving_info-submit",
+                data,
+                function (res) {
+                    console.log(res);
+                    if(res.data) {
+                        form.val(
+                            'address_form-filter',
+                            {
+                                id: res.data.id
+                            }
+                        );
+                    }
+                }
             );
         }
 
