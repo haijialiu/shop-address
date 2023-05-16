@@ -309,6 +309,7 @@
         form.on('submit(form_submit)', function (data) {
             const field = data.field; // 获取表单字段值
             field.status=0;
+            console.log("submit ",field)
             $.post("/receiving_info-submit",
                 field,
                 function (res) {
@@ -390,6 +391,9 @@
                         );
                     }
                 }
+            );
+            table.reload(
+                'addresses_table'
             );
         }
 

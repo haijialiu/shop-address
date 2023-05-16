@@ -69,6 +69,23 @@ public class AddressController {
             if (receivingInfo.isDefaultAddress()) {
                 receivingInfoService.cleanDefaultAddress(user);
             }
+        }else {
+            //auto save
+            if (!receivingInfo.isDefaultAddress()) {
+                QueryWrapper<ReceivingInfo> queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("status",0).eq("default_address",1).ne("id",receivingInfo.getId());
+                List<ReceivingInfo> receivingInfos = receivingInfoService.list(queryWrapper);
+                if (receivingInfos.isEmpty()) {
+                    QueryWrapper<ReceivingInfo> selectNewDefaultWrapper = new QueryWrapper<>();
+                    selectNewDefaultWrapper.eq("status",0).ne("id",receivingInfo.getId());
+                    List<ReceivingInfo> list = receivingInfoService.list(selectNewDefaultWrapper);
+                    if(!list.isEmpty()) {
+                        ReceivingInfo nextDefault = list.get(0);
+                        nextDefault.setDefaultAddress(true);
+                        receivingInfoService.saveOrUpdate(nextDefault);
+                    }
+                }
+            }
         }
         Integer city_id = city_2 != null ? city_2 : (city_1 != null ? city_1 : city_0);
         receivingInfo.setCityId(city_id);
@@ -159,7 +176,6 @@ public class AddressController {
             List<ReceivingInfo> list = receivingInfoService.list(queryWrapper);
             if (!list.isEmpty()) {
                 ReceivingInfo info = list.get(0);
-                System.out.println(info);
                 info.setDefaultAddress(true);
 
                 receivingInfoService.updateById(receivingInfo);
